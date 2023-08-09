@@ -5,7 +5,19 @@ const getUsers = (req, res) => {
   User.find({})
     .then(users => res.send({ users }))
     .catch((e) => {
-      if(e instanceof mongoose.Error.CastError){
+      if(e instanceof mongoose.Error.ValidationError){
+        res.status(httpConstants.HTTP_STATUS_BAD_REQUEST).send({message:'Переданы некорректные данные'});
+      } else {
+        res.status(httpConstants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({message: 'Произошла ошибка на сервере'});
+      }
+    });
+};
+
+const getUserbyId = (req, res) => {
+  User.findById(req.params.userId)
+    .then(user => res.send({ user }))
+    .catch((e) => {
+      if(e instanceof mongoose.Error.ValidationError){
         res.status(httpConstants.HTTP_STATUS_BAD_REQUEST).send({message:'Переданы некорректные данные'});
       } else {
         res.status(httpConstants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({message: 'Произошла ошибка на сервере'});
@@ -18,11 +30,13 @@ const createUser = (req, res) => {
 
   User.create({name, about, avatar})
     .then(user => res.send({ user }))
-    if(e instanceof mongoose.Error.CastError){
-      res.status(httpConstants.HTTP_STATUS_BAD_REQUEST).send({message:'Переданы некорректные данные'});
-    } else {
-      res.status(httpConstants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({message: 'Произошла ошибка на сервере'});
-    }
+    .catch((e) => {
+      if(e instanceof mongoose.Error.ValidationError){
+        res.status(httpConstants.HTTP_STATUS_BAD_REQUEST).send({message:'Переданы некорректные данные'});
+      } else {
+        res.status(httpConstants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({message: 'Произошла ошибка на сервере'});
+      }
+    });
 };
 
 const deleteUser = (req, res) => {
@@ -42,7 +56,7 @@ const updateProfile = (req, res) => {
   User.findByIdAndUpdate(req.user._id, { name, about })
       .then(user => res.send({ user }))
       .catch((e) => {
-        if(e instanceof mongoose.Error.CastError){
+        if(e instanceof mongoose.Error.ValidationError){
           res.status(httpConstants.HTTP_STATUS_BAD_REQUEST).send({message:'Переданы некорректные данные'});
         } else if(e instanceof mongoose.Error.DocumentNotFoundError) {
           res.status(httpConstants.HTTP_STATUS_NOT_FOUND).send({message: 'Пользователь не найден'});
@@ -57,7 +71,7 @@ const updateAvatar = (req, res) => {
   User.findByIdAndUpdate(req.user._id, { avatar })
       .then(user => res.send({ user }))
       .catch((e) => {
-        if(e instanceof mongoose.Error.CastError){
+        if(e instanceof mongoose.Error.ValidationError){
           res.status(httpConstants.HTTP_STATUS_BAD_REQUEST).send({message:'Переданы некорректные данные'});
         } else if(e instanceof mongoose.Error.DocumentNotFoundError) {
           res.status(httpConstants.HTTP_STATUS_NOT_FOUND).send({message: 'Пользователь не найден'});
@@ -74,5 +88,6 @@ module.exports = {
   createUser,
   deleteUser,
   updateProfile,
-  updateAvatar
+  updateAvatar,
+  getUserbyId
 };
