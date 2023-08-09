@@ -33,7 +33,7 @@ const createUser = (req, res) => {
   const { name, about, avatar } = req.body;
 
   User.create({ name, about, avatar })
-    .then((user) => res.send({ user }))
+    .then((user) => res.status(httpConstants.HTTP_STATUS_CREATED).send({ user }))
     .catch((e) => {
       if (e instanceof mongoose.Error.ValidationError) {
         res.status(httpConstants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные' });
@@ -63,7 +63,7 @@ const updateAvatar = (req, res) => {
   const { avatar } = req.body;
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true })
     .orFail()
-    .then((user) => res.status(httpConstants.HTTP_STATUS_CREATED).send({ user }))
+    .then((user) => res.send({ user }))
     .catch((e) => {
       if (e instanceof mongoose.Error.ValidationError) {
         res.status(httpConstants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные' });
