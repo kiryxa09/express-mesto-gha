@@ -20,7 +20,7 @@ app.use((req, res, next) => {
 app.use('/cards', require('./routes/cards'));
 app.use('/users', require('./routes/users'));
 app.use(function(req, res) {
-  res.send({message:'Данной страницы не существет'});
+  res.status(httpConstants.HTTP_STATUS_NOT_FOUND).send({message:'Данной страницы не существет'});
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
