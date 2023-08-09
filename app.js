@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const { PORT = 3000 } = process.env;
 const path = require('path');
+const httpConstants = require('http2').constants;
 const app = express();
 
 mongoose.connect('mongodb://127.0.0.1:27017/mestodb', {
@@ -18,12 +19,12 @@ app.use((req, res, next) => {
 });
 app.use('/cards', require('./routes/cards'));
 app.use('/users', require('./routes/users'));
-
-
-
+app.use(function(req, res) {
+  res.send({message:'Данной страницы не существет'});
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.listen(PORT, () => {
-  console.log('Ссылка на сервер');
+  console.log('Ссылка на сервер: http://127.0.0.1:3000');
 });
 
