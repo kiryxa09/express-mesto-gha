@@ -1,5 +1,6 @@
 const User = require('../models/user');
 const httpConstants = require('http2').constants;
+const { default: mongoose } = require('mongoose');
 
 const getUsers = (req, res) => {
   User.find({})
