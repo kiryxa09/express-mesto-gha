@@ -1,6 +1,9 @@
 const httpConstants = require('http2').constants;
 const { default: mongoose } = require('mongoose');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+console.log(httpConstants);
 
 const getUsers = (req, res) => {
   User.find({})
@@ -30,9 +33,9 @@ const getUserbyId = (req, res) => {
 };
 
 const createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
-
-  User.create({ name, about, avatar })
+  const { name, about, avatar, email, password } = req.body;
+  const hash = bcrypt.hash(password, 10);
+  User.create({ name, about, avatar, email, password })
     .then((user) => res.status(httpConstants.HTTP_STATUS_CREATED).send({ user }))
     .catch((e) => {
       if (e instanceof mongoose.Error.ValidationError) {
@@ -75,10 +78,25 @@ const updateAvatar = (req, res) => {
     });
 };
 
+const login = (req, res) => {
+  const { email, password } = req.body;
+
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      res.send({
+        token: jwt.sign({ _id: user._id }, 'super-strong-secret', { expiresIn: '7d' }),
+      });
+    })
+    .catch((err) => {
+      res.status(httpConstants.HTTP_STATUS_UNAUTHORIZED).send({ message: err.message });
+    });
+};
+
 module.exports = {
   getUsers,
   createUser,
   updateProfile,
   updateAvatar,
   getUserbyId,
+  login,
 };
