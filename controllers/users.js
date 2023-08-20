@@ -3,93 +3,117 @@ const { default: mongoose } = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-console.log(httpConstants);
+const BadReqError = require('../errors/bad-req-err');
+const NotFoundError = require('../errors/not-found-err');
+const UnAuthError = require('../errors/unauth-err');
 
-const getUsers = (req, res) => {
+const getUsers = (req, res, next) => {
   User.find({})
     .then((users) => res.send({ users }))
     .catch((e) => {
       if (e instanceof mongoose.Error.ValidationError) {
-        res.status(httpConstants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные' });
-      } else {
-        res.status(httpConstants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка на сервере' });
+        throw new BadReqError('Переданы некорректные данные');
       }
-    });
+    })
+    .catch(next);
 };
 
-const getUserbyId = (req, res) => {
+const getUserbyId = (req, res, next) => {
   User.findById(req.params.userId)
     .orFail()
     .then((user) => res.send({ user }))
     .catch((e) => {
       if (e instanceof mongoose.Error.CastError) {
-        res.status(httpConstants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные' });
+        throw new BadReqError('Переданы некорректные данные');
       } else if (e instanceof mongoose.Error.DocumentNotFoundError) {
-        res.status(httpConstants.HTTP_STATUS_NOT_FOUND).send({ message: 'Пользователь не найден' });
-      } else {
-        res.status(httpConstants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка на сервере' });
+        throw new NotFoundError('Пользователь с таким id не найден');
       }
-    });
+    })
+    .catch(next);
 };
 
-const createUser = (req, res) => {
-  const { name, about, avatar, email, password } = req.body;
-  const hash = bcrypt.hash(password, 10);
-  User.create({ name, about, avatar, email, password })
-    .then((user) => res.status(httpConstants.HTTP_STATUS_CREATED).send({ user }))
+const createUser = (req, res, next) => {
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
+  bcrypt.hash(password, 10)
+    .then((hash) => User.create({ name, about, avatar, email, password: hash }))
+    .then((user) => res
+      .status(httpConstants.HTTP_STATUS_CREATED)
+      .send({ email: user.email, _id: user._id }))
     .catch((e) => {
       if (e instanceof mongoose.Error.ValidationError) {
-        res.status(httpConstants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные' });
-      } else {
-        res.status(httpConstants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка на сервере' });
+        throw new BadReqError('Переданы некорректные данные');
       }
-    });
+    })
+    .catch(next);
 };
 
-const updateProfile = (req, res) => {
-  const { name, about } = req.body;
+const updateProfile = (req, res, next) => {
+  const {
+    name, about,
+  } = req.body;
   User.findByIdAndUpdate(req.user._id, { name, about }, { runValidators: true, new: true })
     .orFail()
     .then((user) => res.send({ user }))
     .catch((e) => {
       if (e instanceof mongoose.Error.ValidationError) {
-        res.status(httpConstants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные' });
+        throw new BadReqError('Переданы некорректные данные');
       } else if (e instanceof mongoose.Error.DocumentNotFoundError) {
-        res.status(httpConstants.HTTP_STATUS_NOT_FOUND).send({ message: 'Пользователь не найден' });
-      } else {
-        res.status(httpConstants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка на сервере' });
+        throw new NotFoundError('Пользователь с таким id не найден');
       }
-    });
+    })
+    .catch(next);
 };
 
-const updateAvatar = (req, res) => {
+const updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true })
     .orFail()
     .then((user) => res.send({ user }))
     .catch((e) => {
       if (e instanceof mongoose.Error.ValidationError) {
-        res.status(httpConstants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные' });
+        throw new BadReqError('Переданы некорректные данные');
       } else if (e instanceof mongoose.Error.DocumentNotFoundError) {
-        res.status(httpConstants.HTTP_STATUS_NOT_FOUND).send({ message: 'Пользователь не найден' });
-      } else {
-        res.status(httpConstants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка на сервере' });
+        throw new NotFoundError('Пользователь с таким id не найден');
       }
-    });
+    })
+    .catch(next);
 };
 
-const login = (req, res) => {
-  const { email, password } = req.body;
-
-  return User.findUserByCredentials(email, password)
+const login = (req, res, next) => {
+  const {
+    email, password,
+  } = req.body;
+  User.findUserByCredentials(email, password)
     .then((user) => {
-      res.send({
-        token: jwt.sign({ _id: user._id }, 'super-strong-secret', { expiresIn: '7d' }),
-      });
+      const token = jwt.sign({ _id: user._id }, 'super-strong-secret', { expiresIn: '7d' });
+      res
+        .cookie('jwt', token, {
+        // token - наш JWT токен, который мы отправляем
+          maxAge: 3600000 * 24 * 7,
+          httpOnly: true,
+        });
+      res.send({ user });
     })
     .catch((err) => {
-      res.status(httpConstants.HTTP_STATUS_UNAUTHORIZED).send({ message: err.message });
-    });
+      throw new UnAuthError(err.message);
+    })
+    .catch(next);
+};
+
+const getUserInfo = (req, res, next) => {
+  User.findById(req.user._id)
+    .orFail()
+    .then((user) => res.send({ user }))
+    .catch((e) => {
+      if (e instanceof mongoose.Error.CastError) {
+        throw new BadReqError('Переданы некорректные данные');
+      } else if (e instanceof mongoose.Error.DocumentNotFoundError) {
+        throw new NotFoundError('Пользователь с таким id не найден');
+      }
+    })
+    .catch(next);
 };
 
 module.exports = {
@@ -99,4 +123,5 @@ module.exports = {
   updateAvatar,
   getUserbyId,
   login,
+  getUserInfo,
 };

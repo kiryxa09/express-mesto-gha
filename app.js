@@ -3,31 +3,46 @@ const httpConstants = require('http2').constants;
 const helmet = require('helmet');
 const express = require('express');
 const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
+const {
+  createUser, login,
+} = require('./controllers/users');
+const auth = require('./middlewares/auth');
 
 const { PORT = 3000, DB_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
 
 const app = express();
-
+app.use(cookieParser());
 mongoose.connect(DB_URL, {
 });
 
 app.use(helmet());
 app.use(express.json());
 
-app.use((req, res, next) => {
-  req.user = {
-    _id: '64d36b243de4edeb541b6d11',
-  };
+app.post('/signin', login);
+app.post('/signup', createUser);
 
-  next();
-});
-app.use('/cards', require('./routes/cards'));
-app.use('/users', require('./routes/users'));
+app.use('/cards', auth, require('./routes/cards'));
+app.use('/users', auth, require('./routes/users'));
 
 app.use((req, res) => {
   res.status(httpConstants.HTTP_STATUS_NOT_FOUND).send({ message: 'Данной страницы не существет' });
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use((err, req, res) => {
+  // если у ошибки нет статуса, выставляем 500
+  const { statusCode = 500, message } = err;
+
+  res
+    .status(statusCode)
+    .send({
+      // проверяем статус и выставляем сообщение в зависимости от него
+      message: statusCode === 500
+        ? 'На сервере произошла ошибка'
+        : message,
+    });
+});
 app.listen(PORT, () => {
 });
