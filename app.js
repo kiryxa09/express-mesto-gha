@@ -3,7 +3,7 @@ const httpConstants = require('http2').constants;
 const helmet = require('helmet');
 const express = require('express');
 const mongoose = require('mongoose');
-const { errors } = require('celebrate');
+const { errors, Joi, celebrate } = require('celebrate');
 const cookieParser = require('cookie-parser');
 const {
   createUser, login,
@@ -21,8 +21,23 @@ mongoose.connect(DB_URL, {
 app.use(helmet());
 app.use(express.json());
 
-app.post('/signin', login);
-app.post('/signup', createUser);
+app.post('/signin', celebrate({
+  body: Joi.object()
+    .keys({
+      email: Joi.string().required().email(),
+      password: Joi.string().required(),
+    })
+    .unknown(true),
+}), login);
+app.post('/signup', celebrate({
+  body: Joi.object().keys({
+    email: Joi.string().required().email(),
+    password: Joi.string().required(),
+    name: Joi.string().min(2).max(30),
+    about: Joi.string().min(2).max(30),
+    avatar: Joi.string().regex(/https?:\/\/w?w?w?[\w_~:\-?#[\]@!$&'()*+;=]+\.[\w\-.,_~:?#[\]@!$&'()*+;=/]{2,}#?/),
+  }),
+}), createUser);
 
 app.use('/cards', auth, require('./routes/cards'));
 app.use('/users', auth, require('./routes/users'));
