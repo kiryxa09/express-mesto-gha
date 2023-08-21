@@ -50,6 +50,11 @@ const deleteCard = (req, res, next) => {
         throw new UnAuthError('Карточка принадлежит не вам');
       }
     })
+    .catch((e) => {
+      if (e instanceof mongoose.Error.DocumentNotFoundError) {
+        throw new NotFoundError('Карточка не найдена');
+      }
+    })
     .catch(next);
 };
 
