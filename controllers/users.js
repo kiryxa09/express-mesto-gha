@@ -21,11 +21,13 @@ const getUsers = (req, res, next) => {
 const getUserbyId = (req, res, next) => {
   User.findById(req.params.userId)
     .orFail()
-    .then((user) => res.send({ user }))
+    .then((user) => {
+      res.send({ user });
+    })
     .catch((e) => {
       if (e instanceof mongoose.Error.CastError) {
         throw new BadReqError('Переданы некорректные данные');
-      } else if (e instanceof mongoose.Error.DocumentNotFoundError) {
+      } if (e instanceof mongoose.Error.DocumentNotFoundError) {
         throw new NotFoundError('Пользователь с таким id не найден');
       }
     })
@@ -37,13 +39,20 @@ const createUser = (req, res, next) => {
     name, about, avatar, email, password,
   } = req.body;
   bcrypt.hash(password, 10)
-    .then((hash) => User.create({ name, about, avatar, email, password: hash }))
+    .then((hash) => User.create({
+      name, about, avatar, email, password: hash,
+    }))
     .then((user) => res
       .status(httpConstants.HTTP_STATUS_CREATED)
       .send({ email: user.email, _id: user._id }))
     .catch((e) => {
       if (e instanceof mongoose.Error.ValidationError) {
         throw new BadReqError('Переданы некорректные данные');
+      } if (e.code === 11000) {
+        const err = new Error('Необходима авторизация');
+        err.statusCode = httpConstants.HTTP_STATUS_CONFLICT;
+
+        next(err);
       }
     })
     .catch(next);

@@ -8,6 +8,7 @@ const {
   createUser, login,
 } = require('./controllers/users');
 const auth = require('./middlewares/auth');
+const errorHandler = require('./middlewares/errorHandler');
 
 const { PORT = 3000, DB_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
 
@@ -29,20 +30,7 @@ app.use((req, res) => {
   res.status(httpConstants.HTTP_STATUS_NOT_FOUND).send({ message: 'Данной страницы не существет' });
 });
 
+app.use(errorHandler);
 app.use(express.static(path.join(__dirname, 'public')));
-
-app.use((err, req, res) => {
-  // если у ошибки нет статуса, выставляем 500
-  const { statusCode = 500, message } = err;
-
-  res
-    .status(statusCode)
-    .send({
-      // проверяем статус и выставляем сообщение в зависимости от него
-      message: statusCode === 500
-        ? 'На сервере произошла ошибка'
-        : message,
-    });
-});
 app.listen(PORT, () => {
 });
