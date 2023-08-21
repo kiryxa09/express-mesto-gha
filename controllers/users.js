@@ -6,6 +6,7 @@ const User = require('../models/user');
 const BadReqError = require('../errors/bad-req-err');
 const NotFoundError = require('../errors/not-found-err');
 const UnAuthError = require('../errors/unauth-err');
+const StatusConflictError = require('../errors/stat-confl-err');
 
 const getUsers = (req, res, next) => {
   User.find({})
@@ -38,6 +39,9 @@ const createUser = (req, res, next) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
+  if (!email || !password) {
+    throw new BadReqError('Переданы некорректные данные');
+  }
   bcrypt.hash(password, 10)
     .then((hash) => User.create({
       name, about, avatar, email, password: hash,
@@ -46,13 +50,10 @@ const createUser = (req, res, next) => {
       .status(httpConstants.HTTP_STATUS_CREATED)
       .send({ email: user.email, _id: user._id }))
     .catch((e) => {
-      if (e instanceof mongoose.Error.ValidationError) {
+      if (e.code === 11000) {
+        throw new StatusConflictError('Email уже используется');
+      } if (e instanceof mongoose.Error.ValidationError) {
         throw new BadReqError('Переданы некорректные данные');
-      } if (e.code === 11000) {
-        const err = new Error('Необходима авторизация');
-        err.statusCode = httpConstants.HTTP_STATUS_CONFLICT;
-
-        next(err);
       }
     })
     .catch(next);
