@@ -3,7 +3,7 @@ const { default: mongoose } = require('mongoose');
 const Card = require('../models/card');
 const BadReqError = require('../errors/bad-req-err');
 const NotFoundError = require('../errors/not-found-err');
-const UnAuthError = require('../errors/unauth-err');
+const ForbiddenError = require('../errors/forbid-err');
 
 const getCards = (req, res, next) => {
   Card.find({})
@@ -36,7 +36,7 @@ const deleteCard = (req, res, next) => {
     .then((card) => {
       const ownerId = card.owner.toString();
       if (ownerId !== req.user._id) {
-        return next(new UnAuthError('Карточка принадлежит не вам'));
+        return next(new ForbiddenError('Карточка принадлежит не вам'));
       }
       Card.findByIdAndRemove(req.params.cardId)
         .orFail()

@@ -46,9 +46,14 @@ const createUser = (req, res, next) => {
     .then((hash) => User.create({
       name, about, avatar, email, password: hash,
     }))
-    .then((user) => res
-      .status(httpConstants.HTTP_STATUS_CREATED)
-      .send({ user }))
+    .then((user) => {
+      const { _id } = user;
+      res
+        .status(httpConstants.HTTP_STATUS_CREATED)
+        .send({
+          _id, email, name, about, avatar,
+        });
+    })
     .catch((e) => {
       if (e.code === 11000) {
         throw new StatusConflictError('Email уже используется');
