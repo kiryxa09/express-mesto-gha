@@ -3,6 +3,7 @@ const httpConstants = require('http2').constants;
 const helmet = require('helmet');
 const express = require('express');
 const mongoose = require('mongoose');
+const { errors } = require('celebrate');
 const cookieParser = require('cookie-parser');
 const {
   createUser, login,
@@ -30,6 +31,7 @@ app.use((req, res) => {
   res.status(httpConstants.HTTP_STATUS_NOT_FOUND).send({ message: 'Данной страницы не существет' });
 });
 
+app.use(errors());
 app.use(errorHandler);
 app.use(express.static(path.join(__dirname, 'public')));
 app.listen(PORT, () => {
