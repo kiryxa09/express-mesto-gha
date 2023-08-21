@@ -35,27 +35,19 @@ const deleteCard = (req, res, next) => {
     .orFail()
     .then((card) => {
       const ownerId = card.owner.toString();
-      if (ownerId === req.user._id) {
-        Card.findByIdAndRemove(req.params.cardId)
-          .orFail()
-          .then(() => res.send({ card }))
-          .catch((e) => {
-            if (e instanceof mongoose.Error.CastError) {
-              throw new BadReqError('Переданы некорректные данные');
-            } else if (e instanceof mongoose.Error.DocumentNotFoundError) {
-              throw new NotFoundError('Карточка не найдена');
-            }
-          });
-      } else {
-        throw new UnAuthError('Карточка принадлежит не вам');
+      if (ownerId !== req.user._id) {
+        return next(new UnAuthError('Карточка принадлежит не вам'));
       }
+      Card.findByIdAndRemove(req.params.cardId)
+        .orFail()
+        .then(() => res.send({ card }));
     })
     .catch((e) => {
       if (e instanceof mongoose.Error.DocumentNotFoundError) {
-        throw new NotFoundError('Карточка не найдена');
+        return next(new NotFoundError('Карточка не найдена'));
       }
-    })
-    .catch(next);
+      return next(e);
+    });
 };
 
 const likeCard = (req, res, next) => {

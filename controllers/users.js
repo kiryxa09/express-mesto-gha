@@ -48,7 +48,7 @@ const createUser = (req, res, next) => {
     }))
     .then((user) => res
       .status(httpConstants.HTTP_STATUS_CREATED)
-      .send({ email: user.email, _id: user._id }))
+      .send({ user }))
     .catch((e) => {
       if (e.code === 11000) {
         throw new StatusConflictError('Email уже используется');
