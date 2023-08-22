@@ -10,10 +10,10 @@ const getCards = (req, res, next) => {
     .then((cards) => res.send({ cards }))
     .catch((e) => {
       if (e instanceof mongoose.Error.CastError) {
-        throw new BadReqError('Переданы некорректные данные');
+        return next(new BadReqError('Переданы некорректные данные'));
       }
-    })
-    .catch(next);
+      return next(e);
+    });
 };
 
 const createCard = (req, res, next) => {
@@ -24,10 +24,10 @@ const createCard = (req, res, next) => {
     .then((card) => res.status(httpConstants.HTTP_STATUS_CREATED).send({ card }))
     .catch((e) => {
       if (e instanceof mongoose.Error.ValidationError) {
-        throw new BadReqError('Переданы некорректные данные');
+        return next(new BadReqError('Переданы некорректные данные'));
       }
-    })
-    .catch(next);
+      return next(e);
+    });
 };
 
 const deleteCard = (req, res, next) => {
@@ -38,7 +38,7 @@ const deleteCard = (req, res, next) => {
       if (ownerId !== req.user._id) {
         return next(new ForbiddenError('Карточка принадлежит не вам'));
       }
-      Card.findByIdAndRemove(req.params.cardId)
+      Card.deleteOne(card)
         .orFail()
         .then(() => res.send({ card }));
       return true;
@@ -61,12 +61,12 @@ const likeCard = (req, res, next) => {
     .then((card) => res.send({ card }))
     .catch((e) => {
       if (e instanceof mongoose.Error.CastError) {
-        throw new BadReqError('Переданы некорректные данные');
-      } else if (e instanceof mongoose.Error.DocumentNotFoundError) {
-        throw new NotFoundError('Карточка не найдена');
+        return next(new BadReqError('Переданы некорректные данные'));
+      } if (e instanceof mongoose.Error.DocumentNotFoundError) {
+        return next(new NotFoundError('Карточка не найдена'));
       }
-    })
-    .catch(next);
+      return next(e);
+    });
 };
 
 const dislikeCard = (req, res, next) => {
@@ -79,12 +79,12 @@ const dislikeCard = (req, res, next) => {
     .then((card) => res.send({ card }))
     .catch((e) => {
       if (e instanceof mongoose.Error.CastError) {
-        throw new BadReqError('Переданы некорректные данные');
-      } else if (e instanceof mongoose.Error.DocumentNotFoundError) {
-        throw new NotFoundError('Карточка не найдена');
+        return next(new BadReqError('Переданы некорректные данные'));
+      } if (e instanceof mongoose.Error.DocumentNotFoundError) {
+        return next(new NotFoundError('Карточка не найдена'));
       }
-    })
-    .catch(next);
+      return next(e);
+    });
 };
 
 module.exports = {

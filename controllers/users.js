@@ -13,10 +13,10 @@ const getUsers = (req, res, next) => {
     .then((users) => res.send({ users }))
     .catch((e) => {
       if (e instanceof mongoose.Error.ValidationError) {
-        throw new BadReqError('Переданы некорректные данные');
+        return next(new BadReqError('Переданы некорректные данные'));
       }
-    })
-    .catch(next);
+      return next(e);
+    });
 };
 
 const getUserbyId = (req, res, next) => {
@@ -27,12 +27,12 @@ const getUserbyId = (req, res, next) => {
     })
     .catch((e) => {
       if (e instanceof mongoose.Error.CastError) {
-        throw new BadReqError('Переданы некорректные данные');
+        return next(new BadReqError('Переданы некорректные данные'));
       } if (e instanceof mongoose.Error.DocumentNotFoundError) {
-        throw new NotFoundError('Пользователь с таким id не найден');
+        return next(new NotFoundError('Пользователь с таким id не найден'));
       }
-    })
-    .catch(next);
+      return next(e);
+    });
 };
 
 const createUser = (req, res, next) => {
@@ -40,7 +40,7 @@ const createUser = (req, res, next) => {
     name, about, avatar, email, password,
   } = req.body;
   if (!email || !password) {
-    throw new BadReqError('Переданы некорректные данные');
+    return next(new BadReqError('Переданы некорректные данные'));
   }
   bcrypt.hash(password, 10)
     .then((hash) => User.create({
@@ -56,12 +56,13 @@ const createUser = (req, res, next) => {
     })
     .catch((e) => {
       if (e.code === 11000) {
-        throw new StatusConflictError('Email уже используется');
+        return next(new StatusConflictError('Email уже используется'));
       } if (e instanceof mongoose.Error.ValidationError) {
-        throw new BadReqError('Переданы некорректные данные');
+        return next(new BadReqError('Переданы некорректные данные'));
       }
-    })
-    .catch(next);
+      return next(e);
+    });
+  return true;
 };
 
 const updateProfile = (req, res, next) => {
@@ -73,12 +74,12 @@ const updateProfile = (req, res, next) => {
     .then((user) => res.send({ user }))
     .catch((e) => {
       if (e instanceof mongoose.Error.ValidationError) {
-        throw new BadReqError('Переданы некорректные данные');
-      } else if (e instanceof mongoose.Error.DocumentNotFoundError) {
-        throw new NotFoundError('Пользователь с таким id не найден');
+        return next(new BadReqError('Переданы некорректные данные'));
+      } if (e instanceof mongoose.Error.DocumentNotFoundError) {
+        return next(new NotFoundError('Пользователь с таким id не найден'));
       }
-    })
-    .catch(next);
+      return next(e);
+    });
 };
 
 const updateAvatar = (req, res, next) => {
@@ -88,12 +89,12 @@ const updateAvatar = (req, res, next) => {
     .then((user) => res.send({ user }))
     .catch((e) => {
       if (e instanceof mongoose.Error.ValidationError) {
-        throw new BadReqError('Переданы некорректные данные');
-      } else if (e instanceof mongoose.Error.DocumentNotFoundError) {
-        throw new NotFoundError('Пользователь с таким id не найден');
+        return next(new BadReqError('Переданы некорректные данные'));
+      } if (e instanceof mongoose.Error.DocumentNotFoundError) {
+        return next(new NotFoundError('Пользователь с таким id не найден'));
       }
-    })
-    .catch(next);
+      return next(e);
+    });
 };
 
 const login = (req, res, next) => {
@@ -111,10 +112,12 @@ const login = (req, res, next) => {
         });
       res.send({ user });
     })
-    .catch((err) => {
-      throw new UnAuthError(err.message);
-    })
-    .catch(next);
+    .catch((e) => {
+      if (e) {
+        return next(new UnAuthError(e.message));
+      }
+      return next(e);
+    });
 };
 
 const getUserInfo = (req, res, next) => {
@@ -123,12 +126,12 @@ const getUserInfo = (req, res, next) => {
     .then((user) => res.send({ user }))
     .catch((e) => {
       if (e instanceof mongoose.Error.CastError) {
-        throw new BadReqError('Переданы некорректные данные');
-      } else if (e instanceof mongoose.Error.DocumentNotFoundError) {
-        throw new NotFoundError('Пользователь с таким id не найден');
+        return next(new BadReqError('Переданы некорректные данные'));
+      } if (e instanceof mongoose.Error.DocumentNotFoundError) {
+        return next(new NotFoundError('Пользователь с таким id не найден'));
       }
-    })
-    .catch(next);
+      return next(e);
+    });
 };
 
 module.exports = {
