@@ -10,6 +10,7 @@ const {
 } = require('./controllers/users');
 const auth = require('./middlewares/auth');
 const errorHandler = require('./middlewares/errorHandler');
+const regex = require('./utils/constants');
 
 const { PORT = 3000, DB_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
 
@@ -35,7 +36,7 @@ app.post('/signup', celebrate({
     password: Joi.string().required(),
     name: Joi.string().min(2).max(30),
     about: Joi.string().min(2).max(30),
-    avatar: Joi.string().regex(/https?:\/\/w?w?w?[\w_~:\-?#[\]@!$&'()*+;=]+\.[\w\-.,_~:?#[\]@!$&'()*+;=/]{2,}#?/),
+    avatar: Joi.string().regex(regex),
   }),
 }), createUser);
 

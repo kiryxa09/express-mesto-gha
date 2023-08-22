@@ -3,6 +3,7 @@ const { celebrate, Joi } = require('celebrate');
 const {
   getUsers, updateProfile, updateAvatar, getUserbyId, getUserInfo,
 } = require('../controllers/users');
+const regex = require('../utils/constants');
 
 router.get('/me', getUserInfo);
 router.get('/:userId', celebrate({
@@ -19,7 +20,7 @@ router.patch('/me', celebrate({
 }), updateProfile);
 router.patch('/me/avatar', celebrate({
   body: Joi.object().keys({
-    avatar: Joi.string().regex(/https?:\/\/w?w?w?[\w_~:\-?#[\]@!$&'()*+;=]+\.[\w\-.,_~:?#[\]@!$&'()*+;=/]{2,}#?/),
+    avatar: Joi.string().regex(regex),
   }),
 }), updateAvatar);
 
